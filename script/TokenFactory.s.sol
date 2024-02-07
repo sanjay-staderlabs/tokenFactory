@@ -25,8 +25,11 @@ contract TokenFactoryScript is Script {
         );
         TokenFactory(address(tokenFactoryProxy)).initialize();
         console.log('tokenFactoryProxy Deployed at ', address(tokenFactoryProxy));
-        address token = TokenFactory(address(tokenFactoryProxy)).deployToken('bTest', 'bTest', 100 ether);
-        console.log('bTest token deployed at ',token);
+        address bTestToken = TokenFactory(address(tokenFactoryProxy)).deployToken('bTest', 'bTest', 100 ether);
+        address berTestToken = TokenFactory(address(tokenFactoryProxy)).deployToken('berTest', 'berTest', 100 ether);
+
+        console.log('bTest token deployed at ',bTestToken);
+        console.log('berTest token deployed at ', berTestToken);
         vm.stopBroadcast();
     }
 }

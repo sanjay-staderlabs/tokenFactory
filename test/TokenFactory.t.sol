@@ -31,8 +31,7 @@ contract TokenFactoryTest is Test {
         address deployer = vm.addr(randomSeed);
         vm.startPrank(deployer);
         ERC20Upgradeable token = ERC20Upgradeable(tokenFactoryProxy.deployToken('test','test', 100 ether));
-        TokenData memory tokenData = tokenFactoryProxy.getTokenData(address(token));
-        assertEq(ProxyAdmin(tokenData.proxyAdmin).owner(), address(tokenFactoryProxy));
+        assertEq(ProxyAdmin(tokenFactoryProxy.proxyAdmin()).owner(), address(tokenFactoryProxy));
         assertEq(token.totalSupply(),100 ether);
         assertEq(token.balanceOf(deployer),100 ether);
     }

@@ -14,7 +14,9 @@ contract TokenFactory is ITokenFactory, AccessControlUpgradeable{
 
     UpgradableERC20 public upgradableERC20Impl; 
 
-    mapping(address => TokenData) public tokenDataByAddress; 
+    ProxyAdmin public proxyAdmin;
+
+    mapping(address => address) public tokenOwnerByAddress; 
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor(){
@@ -24,6 +26,7 @@ contract TokenFactory is ITokenFactory, AccessControlUpgradeable{
     function initialize() external initializer {
         __AccessControl_init();
         upgradableERC20Impl = new UpgradableERC20();
+        proxyAdmin = new ProxyAdmin();
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
@@ -35,14 +38,13 @@ contract TokenFactory is ITokenFactory, AccessControlUpgradeable{
      * @param initialSupply initial supply of the token to mint and transfer to the caller of this function
      */
     function deployToken(string calldata name, string calldata symbol, uint256 initialSupply) external returns (address){
-        ProxyAdmin proxyAdmin = new ProxyAdmin();
         TransparentUpgradeableProxy tokenProxy = new TransparentUpgradeableProxy(
             address(upgradableERC20Impl),
             address(proxyAdmin),
             ''
         );
         UpgradableERC20(address(tokenProxy)).initialize(name, symbol,msg.sender, initialSupply);
-        tokenDataByAddress[address(tokenProxy)] = TokenData(address(proxyAdmin),msg.sender);
+        tokenOwnerByAddress[address(tokenProxy)] = msg.sender;
         emit TokenDeployed(msg.sender, address(tokenProxy));
         return address(tokenProxy);
     }
@@ -53,18 +55,13 @@ contract TokenFactory is ITokenFactory, AccessControlUpgradeable{
      * @param impl address of the new implementation contract
      */
     function upgradeTokenImplementation(address token, address impl) external{
-        TokenData memory tokenAdmin = getTokenData(token);
-        if(tokenAdmin.owner != msg.sender){
+        if(tokenOwnerByAddress[token] != msg.sender){
             revert InvalidOwner();
         }
         if(impl == address(0)){
             revert ZeroAddress();
         }
-        ProxyAdmin(tokenAdmin.proxyAdmin).upgrade(ITransparentUpgradeableProxy(token),impl);
+        ProxyAdmin(proxyAdmin).upgrade(ITransparentUpgradeableProxy(token),impl);
         emit UpgradedTokenImplementation(token, impl);
-    }
-
-    function getTokenData(address token) public view returns (TokenData memory){
-        return tokenDataByAddress[token];
     }
 }
